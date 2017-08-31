@@ -4,6 +4,8 @@ results
 symmetric crypto
 ----------------
 
+In iterations per second.
+
 | pycrypt   | cryptography  |    factor |  algorithm
 | ---------:| -------------:|  --------:|:-----
 |  756499.3 |      379890.2 |      0.50 | AES
@@ -45,7 +47,7 @@ message size = 32 bytes, in Mbyte/sec
 |      14.6 |           1.5 |      0.10 | ripemd160
 
 Both `pycrypto` and `cryptography` have some call overhead.
-for `pycrypto` the byterate stabalizes for messages over 1K,
+for `pycrypto` the byterate stabilizes for messages over 1K,
 while for `cryptography this happens for messages over 16K.
 
 That said, `cryptography` is generally faster for very large messages,
@@ -62,7 +64,7 @@ asymmetric crypto
 |    4920.6 |    4217.5 |      18242.9  |      4.3  | rsa.2048
 |    1440.8 |    1467.3 |       6448.8  |      4.4  | rsa.4096
 
-So the `cryptography` library is generally faster.
+So for `RSA` the `cryptography` library is generally faster.
 The `pycrypt` performance is roughly equal to using the `pow()` function.
 
 random numbers
@@ -83,5 +85,5 @@ in Mbyte/sec
 | 2361.0 |   101.9 |       0.6 |  23.2 |  158.7 |     8192 |
 | 2568.1 |    97.7 |       0.3 |  26.3 |  286.8 |    16384 |
 
-
+The `cryptography` library does not have a builtin PRNG.
 Conclusion: secure random numbers are expensive.
