@@ -38,6 +38,7 @@ from cryptography.hazmat.primitives import ciphers
 from cryptography.hazmat.primitives.ciphers import algorithms, modes
 
 import random
+import os
 
 backend = default_backend()
 
@@ -66,7 +67,8 @@ def generateNBitPrime(bits):
 
 
 def generateNBitString(bits):
-    return Crypto.Util.number.long_to_bytes(generateNBitNumber(bits))
+    #return Crypto.Util.number.long_to_bytes(generateNBitNumber(bits))
+    return os.urandom(bits//8)
 
 
 class Perftest(object):
@@ -131,6 +133,15 @@ class TestPythonRandom(Perftest):
 
     def test(self):
         return random.getrandbits(self.msgbits)
+
+class TestOsURandom(Perftest):
+    """ test os.urandom """
+    def __init__(self, msgbits):
+        super(TestOsURandom, self).__init__("os.urandom:%d" % (msgbits))
+        self.msgbits = msgbits
+
+    def test(self):
+        return os.urandom(self.msgbits//8)
 
 
 class TestPyCryptPRNG(Perftest):
@@ -261,6 +272,18 @@ class TestModexp(Perftest):
     def test(self):
         return pow(self.msg, self.exponent, self.modulus)
 
+import gmpy2
+class TestGmpPowmod(Perftest):
+    """ test gmpy modular exponentiation for RSA """
+    def __init__(self, modbits, msgbits, expbits):
+        super(TestGmpPowmod, self).__init__("powmod:%d/%d/%d" % (modbits, msgbits, expbits))
+        self.msg = generateNBitNumber(msgbits)
+        self.exponent = generateNBitNumber(expbits)
+        self.modulus = generateNBitPrime(modbits)
+
+    def test(self):
+        return gmpy2.powmod(self.msg, self.exponent, self.modulus)
+
 
 class TestLambda(Perftest):
     """ test generic lambda expression """
@@ -324,6 +347,7 @@ def create_test_list():
 
     return [
         TestArgRange(TestPythonRandom, msgbits=prng_msg_bitsizes),
+        TestArgRange(TestOsURandom, msgbits=prng_msg_bitsizes),
         TestArgRange(TestPythonSysRandom, msgbits=prng_msg_bitsizes),
         TestArgRange(TestPyCryptPRNG, msgbits=prng_msg_bitsizes),
         TestArgRange(TestGenPrime, bits=(32, 64, 128, 256, 512)),
@@ -418,6 +442,7 @@ def create_test_list():
 def create_modexp_list():
     return [
         TestArgRange(TestModexp, modbits=(128,256,512,1024,2048,4096), msgbits=(2,256,512,1024,2048,4096), expbits=(2,16,128,256,512,1024,2048,4096)),
+        TestArgRange(TestGmpPowmod, modbits=(128,256,512,1024,2048,4096), msgbits=(2,256,512,1024,2048,4096), expbits=(2,16,128,256,512,1024,2048,4096)),
     ]
 
 
@@ -425,6 +450,8 @@ def main():
     import argparse
     parser = argparse.ArgumentParser(description='Crypto benchmark')
     parser.add_argument('--modexp', action='store_true')
+    parser.add_argument('--baselinetest', type=float, default=0.005, help='How long to make the initial algorithm measurement')
+    parser.add_argument('--fulltest', type=float, default=0.1, help='How long to actually measure the algorithm')
     args = parser.parse_args()
 
     if args.modexp:
@@ -435,9 +462,9 @@ def main():
     for test in tests:
         if type(test) == types.GeneratorType:
             for item in test:
-                item.run(0.005, 0.1)
+                item.run(args.baselinetest, args.fulltest)
         elif isinstance(test, Perftest):
-            test.run(0.005, 0.1)
+            test.run(args.baselinetest, args.fulltest)
         else:
             print("?", test)
 
